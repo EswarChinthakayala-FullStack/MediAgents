@@ -1,0 +1,67 @@
+version: '3.8'
+
+services:
+  agent_01_triage:
+    build: .
+    ports: ["8001:8001"]
+    environment: [ "AGENT_MODULE=agents.agent_01_triage.main", "PORT=8001" ]
+    volumes: [ "./model_cache:/app/model_cache" ]
+
+  agent_02_appointment:
+    build: .
+    ports: ["8002:8002"]
+    environment: [ "AGENT_MODULE=agents.agent_02_appointment.main", "PORT=8002" ]
+
+  agent_03_monitoring:
+    build: .
+    ports: ["8003:8003"]
+    environment: [ "AGENT_MODULE=agents.agent_03_monitoring.main", "PORT=8003" ]
+
+  agent_04_risk:
+    build: .
+    ports: ["8004:8004"]
+    environment: [ "AGENT_MODULE=agents.agent_04_risk.main", "PORT=8004" ]
+
+  agent_05_decision_support:
+    build: .
+    ports: ["8005:8005"]
+    environment: [ "AGENT_MODULE=agents.agent_05_decision_support.main", "PORT=8005" ]
+
+  agent_06_ehr:
+    build: .
+    ports: ["8006:8006"]
+    environment: [ "AGENT_MODULE=agents.agent_06_ehr.main", "PORT=8006" ]
+
+  agent_07_medication:
+    build: .
+    ports: ["8007:8007"]
+    environment: [ "AGENT_MODULE=agents.agent_07_medication.main", "PORT=8007" ]
+
+  agent_08_assistant:
+    build: .
+    ports: ["8008:8008"]
+    environment: [ "AGENT_MODULE=agents.agent_08_assistant.main", "PORT=8008" ]
+
+  agent_09_analytics:
+    build: .
+    ports: ["8009:8009"]
+    environment: [ "AGENT_MODULE=agents.agent_09_analytics.main", "PORT=8009" ]
+
+  agent_10_emergency:
+    build: .
+    ports: ["8010:8010"]
+    environment: [ "AGENT_MODULE=agents.agent_10_emergency.main", "PORT=8010" ]
+
+  agent_11_security:
+    build: .
+    ports: ["8011:8011"]
+    environment: [ "AGENT_MODULE=agents.agent_11_security.main", "PORT=8011" ]
+
+  agent_12_portal:
+    build: .
+    ports: ["8012:8012"]
+    environment: [ "AGENT_MODULE=agents.agent_12_portal.main", "PORT=8012" ]
+
+# Shared model cache volume across all AI-heavy agents
+volumes:
+  model_cache:
