@@ -6,13 +6,23 @@
 # =============================================================================
 
 echo "🚀 Starting all 12 ClinicAI agents locally..."
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+cd "$SCRIPT_DIR"
 export PYTHONPATH=$PYTHONPATH:.
+
+# Use venv python if it exists
+if [ -d "venv" ]; then
+    PYTHON_EXEC="./venv/bin/python3"
+else
+    PYTHON_EXEC="python3"
+fi
 
 # Create a logs directory if it doesn't exist
 mkdir -p logs
 
 # Port configuration
 AGENTS=(
+    "agent_00_orchestrator:8000"
     "agent_01_triage:8001"
     "agent_02_appointment:8002"
     "agent_03_monitoring:8003"
@@ -32,7 +42,7 @@ for ENTRY in "${AGENTS[@]}"; do
     PORT=${ENTRY#*:}
     echo "📻 Starting $AGENT on port $PORT..."
     # Running in background and redirecting output to logs
-    python3 -m agents.$AGENT.main > "logs/${AGENT}.log" 2>&1 &
+    $PYTHON_EXEC -m agents.$AGENT.main > "logs/${AGENT}.log" 2>&1 &
     echo $! > "logs/${AGENT}.pid"
 done
 

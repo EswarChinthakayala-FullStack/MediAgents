@@ -1,6 +1,11 @@
 version: '3.8'
 
 services:
+  agent_00_orchestrator:
+    build: .
+    ports: ["8000:8000"]
+    environment: [ "AGENT_MODULE=agents.agent_00_orchestrator.main", "PORT=8000" ]
+
   agent_01_triage:
     build: .
     ports: ["8001:8001"]

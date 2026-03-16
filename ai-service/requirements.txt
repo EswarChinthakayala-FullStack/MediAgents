@@ -3,7 +3,7 @@
 # =============================================================================
 
 # ── Web Framework & Servers ───────────────────────────────────────────────────
-fastapi==0.115.12              # High-performance async API framework
+fastapi==0.115.9              # High-performance async API framework
 uvicorn[standard]==0.34.3      # ASGI server for FastAPI
 python-multipart==0.0.20       # Form data parsing
 pydantic==2.11.5               # Input validation and schema enforcement
@@ -24,6 +24,7 @@ scikit-learn==1.8.0            # Predictive modeling (Agent 04)
 requests==2.32.5               # Sync HTTP (Medical APIs)
 httpx==0.28.1                  # Async HTTP (Inter-agent communication)
 python-dotenv==1.2.1           # Config management
+redis==5.0.1                   # Redis for Master Event Bus Topology (Streams)
 
 # ── Security & Privacy ────────────────────────────────────────────────────────
 python-jose[cryptography]==3.5.0  # JWT for Security Agent RBAC

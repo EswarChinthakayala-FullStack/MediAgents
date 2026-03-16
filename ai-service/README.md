@@ -10,6 +10,7 @@ The platform is composed of 12 specialized micro-agents, each running on its own
 
 | ID | Agent Name | Core Responsibility | Port |
 |:---|:---|:---|:---|
+| **00** | **Master Orchestrator** | Central clinical pipeline coordinator. | `8000` |
 | **01** | **Symptom Triage** | Classify urgency using RAG & clinical rules. | `8001` |
 | **02** | **Appointment Scheduler** | Dynamic scheduling based on clinical priority. | `8002` |
 | **03** | **Continuous Monitoring** | Real-time vital signs ingestion and anomaly detection. | `8003` |
@@ -25,12 +26,36 @@ The platform is composed of 12 specialized micro-agents, each running on its own
 
 ---
 
+## 🗺️ Agent Dependency Map
+
+The following matrix represents how agents interact. A checkmark (✓) indicates that the **Row Agent** either calls a REST endpoint of, or subscribes to a Redis Stream from, the **Column Agent**.
+
+| FROM \ TO | 01 | 02 | 03 | 04 | 05 | 06 | 07 | 08 | 09 | 10 | 11 | 12 |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| **01 Triage** | · | ✓ | · | · | · | ✓ | · | · | · | ✓ | · | · |
+| **02 Appt** | · | · | · | · | · | ✓ | · | · | · | · | · | ✓ |
+| **03 Monitor** | · | · | · | ✓ | · | ✓ | · | · | · | ✓ | · | · |
+| **04 Risk** | · | · | · | · | ✓ | ✓ | · | · | ✓ | ✓ | · | · |
+| **05 Decision** | · | · | · | · | · | ✓ | · | · | · | · | · | · |
+| **06 EHR** | · | · | · | · | · | · | · | · | ✓ | · | · | · |
+| **07 Meds** | · | · | · | · | ✓ | ✓ | · | · | · | ✓ | · | ✓ |
+| **08 Chat** | ✓ | ✓ | · | · | · | ✓ | · | · | · | ✓ | · | · |
+| **09 Analytics** | · | · | · | · | · | ✓ | · | · | · | · | · | · |
+| **10 Alert** | · | · | · | · | · | ✓ | · | · | · | · | · | ✓ |
+| **11 Security** | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | · | ✓ |
+| **12 Notify** | · | · | · | · | · | ✓ | · | · | · | · | · | · |
+
+---
+
+---
+
 ## 🚀 Quick Start & Installation
 
 ### 1. Prerequisites
 - **Python 3.10+** (Recommend 3.11 or 3.12)
 - **RAM**: 8GB Minimum (16GB+ recommended for running multiple local LLMs)
 - **Disk**: 5GB for models and database storage.
+- **Redis**: Required for the Master Event Bus Topology (Agents communication).
 
 ### 2. Setup Environment
 ```bash
@@ -40,8 +65,7 @@ cd MediAgents
 
 # Create and activate virtual environment
 python3 -m venv .venv
-source .venv/bin/activate
-
+source source .venv/bin/activate
 # Install Core Dependencies
 pip install -r requirements.txt
 ```
@@ -62,7 +86,18 @@ pip install torch torchvision torchaudio --index-url https://download.pytorch.or
 
 The system will automatically detect `cuda` and switch from CPU to GPU mode.
 
-### 5. Customizing Model Path
+### 5. GPU Acceleration (macOS — Apple Silicon M1/M2/M3)
+For Mac users with Apple Silicon, the system uses **MPS (Metal Performance Shaders)** for acceleration. 
+
+1. **Install PyTorch**:
+   The standard Torch installation usually includes MPS support.
+   ```bash
+   pip install torch torchvision torchaudio
+   ```
+2. **Verification**:
+   The system will automatically output `Loading TinyLlama on mps...` if acceleration is enabled. Ensure you are running Python 3.10+ on macOS 12.3+.
+
+### 6. Customizing Model Path
 You can change where the LLM models are stored by setting the `CLINICAI_MODEL_PATH` environment variable:
 
 ```bash
@@ -82,6 +117,40 @@ Every agent is a standalone FastAPI service. To start the **Symptom Triage Agent
 ```bash
 export PYTHONPATH=$PYTHONPATH:.
 python3 -m agents.agent_01_triage.main
+```
+
+### 🚀 Starting All Servers
+To start all 12 agents simultaneously, you can use the provided automation scripts:
+
+#### Method 1: Using Shell Script (Recommended for Development)
+This will start all agents in the background and log their output to the `logs/` directory.
+Make sure your virtual environment is activated.
+
+```bash
+# Activate environment (if not already)
+source venv/bin/activate
+
+# Give execution permission
+chmod +x start_all_agents.sh
+
+# Run the startup script
+./start_all_agents.sh
+```
+
+#### Method 2: Using Docker Compose
+If you have Docker installed, you can containerize the entire ecosystem:
+```bash
+docker-compose up --build
+```
+
+### 🛑 Stopping the Servers
+If you used the shell script, you can stop all agents with:
+```bash
+pkill -f 'agents.*.main'
+```
+If you used Docker, simply run:
+```bash
+docker-compose down
 ```
 
 ### Integrating Everything
@@ -142,6 +211,46 @@ For a complete, step-by-step technical walkthrough of deploying ClinicAI to AWS 
 - **AWS Secrets Manager**: Manage API keys and JWT secrets.
 - **AWS App Mesh**: For secure, observable communication between all 12 agents.
 - **AWS API Gateway**: A single entry point for the Patient Portal and Doctor Dashboard.
+
+---
+
+## 📡 Communication Patterns
+
+ClinicAI uses a hybrid communication strategy to ensure reliability, visibility, and high performance.
+
+| Pattern | Mechanism | Example |
+|:---|:---|:---|
+| **Event-driven** | Agent publishes to **Redis Streams**; subscribers react async. | `triage_result` → Appointment Agent |
+| **Request-Response**| Sync **REST calls** (FastAPI) for direct orchestration. | Frontend → Triage Agent POST `/triage` |
+| **Shared Memory** | Agents read/write a **Patient Context Object** (JSON) in Redis. | `bus.set_context("PT-101", {...})` |
+
+---
+
+## 🎬 Clinical Scenarios
+
+### 2.2 Scenario: New Patient Symptom Submission
+This is the end-to-end flow from patient form submission to doctor pre-briefing:
+
+1.  **Patient Portal (Agent 12)**: Patient submits symptom form → Portal Agent calls Orchestrator `POST /orchestrate`.
+2.  **Orchestrator (Agent 00)**: Fetches EHR context (GET /record/{id}), invokes Triage Agent (POST /triage).
+3.  **Triage Agent (01)**: Runs RAG guidelines + ICD-10 check → Publishes `triage_result` to Redis.
+4.  **Alert Agent (10)**: Subscribes to `triage_result`. If Emergency → Fires push notification/SMS.
+5.  **Appointment Agent (02)**: Subscribes to `triage_result` → schedules optimal slot → publishes `appointment_scheduled`.
+6.  **EHR Agent (06)**: Subscribes to results → writes to patient record → updates Redis context.
+7.  **Notification Agent (12)**: Subscribes to `appointment_scheduled` → sends confirmation to patient.
+8.  **Decision Support (05)**: Subscribes to `triage_result` → fetches EHR → pushes advisory to Doctor Dashboard via WebSocket.
+9.  **Risk Agent (04)**: Calculates risk score using history + triage → publishes `risk_score_updated` → stored in context.
+
+### 2.3 Scenario: Chronic Patient Vital Alert
+End-to-end flow for deteriorating patients:
+
+1.  **Monitoring (03)**: Anomaly detected (e.g., SpO2 < 92%) → Publishes `vital_alert` to Redis.
+2.  **Emergency (10)**: Receives alert → Sends Physician Notification → Starts **2-minute escalation timer**.
+3.  **Risk (04)**: Receives alert → Re-scores patient mortality/deterioration risk → Publishes `risk_score_updated`.
+4.  **Decision Support (05)**: Receives risk update → Prepares intervention options → Pushes to Doctor Dashboard.
+5.  **EHR (06)**: Receives alert → Logs timestamped clinical event → Updates shared context.
+6.  **Monitoring (03)**: Automatically switches to **10-second high-frequency polling** for the affected patient.
+7.  **Emergency (10)**: If no acknowledgement within 2 mins → Escalates to Senior Staff + Auto-recommends ambulance dispatch.
 
 ---
 

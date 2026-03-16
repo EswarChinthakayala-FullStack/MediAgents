@@ -2,7 +2,7 @@ from pydantic import BaseModel, Field
 from typing import List, Dict, Any, Optional
 from datetime import datetime
 
-class PatientQueueItem(BaseModel):
+class AppointmentRequestPatient(BaseModel):
     patient_id: str
     triage_tier: int  # 1=Emergency, 2=Urgent, 3=Routine, 4=Self-care
     severity_score: int # 1-10
@@ -20,7 +20,7 @@ class ResourceState(BaseModel):
     nurses_on_duty: int
 
 class AppointmentRequest(BaseModel):
-    patient: PatientQueueItem
+    patient: AppointmentRequestPatient
     available_doctors: List[DoctorAvailability]
     resource_state: ResourceState
 

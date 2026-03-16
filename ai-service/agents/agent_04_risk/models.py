@@ -7,13 +7,28 @@ class RiskFactor(BaseModel):
     impact: float # SHAP-like value
     description: str
 
+class LabResult(BaseModel):
+    test_name: str
+    value: float
+    unit: str
+    status: str # Normal | Abnormal | Critical
+
+class Vitals(BaseModel):
+    heart_rate: int
+    sys_bp: int
+    dia_bp: int
+    temp: float
+    spo2: int
+
 class PatientProfile(BaseModel):
     patient_id: str
     age: int
     comorbidities: List[str]
-    recent_vital_trends: Dict[str, str] # e.g. {"HeartRate": "Increasing", "SpO2": "Decreasing"}
-    last_lab_results: Dict[str, float] # e.g. {"Creatinine": 1.5, "Glucose": 200}
-    medications: List[str]
+    vitals: Optional[Vitals] = None
+    recent_labs: List[LabResult] = []
+    recent_vital_trends: Dict[str, str] = {} # e.g. {"HeartRate": "Increasing", "SpO2": "Decreasing"}
+    last_lab_results: Dict[str, float] = {} # e.g. {"Creatinine": 1.5, "Glucose": 200}
+    medications: List[str] = []
 
 class RiskAssessment(BaseModel):
     patient_id: str

@@ -16,14 +16,27 @@ class DrugSafetyAlert(BaseModel):
     severity: str # Moderate | High | Critical
     description: str
 
-class DecisionRequest(BaseModel):
+class PatientContext(BaseModel):
     patient_id: str
-    chief_complaint: str
-    triage_summary: str
-    history: List[str]
-    current_medications: List[str]
-    lab_results: Dict[str, Any]
-    risk_scores: Dict[str, float] # From Agent 04
+    current_symptoms: str
+    triage_tier: int
+    risk_score: float
+
+class DoctorProfile(BaseModel):
+    doctor_id: str
+    specialty: str
+
+class DecisionRequest(BaseModel):
+    patient: PatientContext
+    doctor: DoctorProfile
+    # Traditional fields (optional for compatibility)
+    patient_id: Optional[str] = None
+    chief_complaint: Optional[str] = None
+    triage_summary: Optional[str] = None
+    history: List[str] = []
+    current_medications: List[str] = []
+    lab_results: Dict[str, Any] = {}
+    risk_scores: Dict[str, float] = {} # From Agent 04
 
 class ClinicalRecommendation(BaseModel):
     prefix: str = "For physician review only — not a substitute for clinical judgement."

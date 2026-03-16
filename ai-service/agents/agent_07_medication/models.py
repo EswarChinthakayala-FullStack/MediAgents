@@ -14,10 +14,18 @@ class AdherenceRecord(BaseModel):
     taken_timestamp: datetime
     status: str # Taken | Missed | Delayed
 
+class MedicationItem(BaseModel):
+    drug_name: str
+    dosage: str
+    frequency: str
+    last_taken: str
+
 class MedicationReport(BaseModel):
     patient_id: str
-    prescriptions: List[Prescription]
-    adherence_history: List[AdherenceRecord]
+    prescriptions: List[Prescription] = []
+    medications: List[MedicationItem] = [] # For compatibility with main.py
+    adherence_history: List[AdherenceRecord] = []
+    adherence_logs: List[Any] = [] # For compatibility with main.py
     reported_side_effects: List[str] = []
 
 class MedicationAnalysis(BaseModel):

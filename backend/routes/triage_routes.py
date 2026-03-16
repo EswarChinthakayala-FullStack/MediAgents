@@ -6,6 +6,36 @@ import uuid
 
 triage_bp = Blueprint('triage', __name__)
 
+@triage_bp.route('/', methods=['POST'])
+@triage_bp.route('/submit', methods=['POST'])
+def submit_symptoms():
+    data = request.json
+    
+    # Forward to Agent 12 (Portal) which orchestrates via Agent 00
+    try:
+        # Agent 12 is on port 8012
+        PORTAL_AGENT_URL = "http://localhost:8012/submit_symptoms"
+        import requests
+        resp = requests.post(PORTAL_AGENT_URL, json=data, timeout=5)
+        
+        if resp.status_code == 200:
+            agent_data = resp.json()
+            # The orchestrator returns OrchestrationResponse
+            # We want to return something the frontend Symptoms.jsx expects
+            return jsonify({
+                "urgency_label": agent_data.get("urgency_label", "Moderate"),
+                "urgency_tier": agent_data.get("urgency_tier", 3),
+                "reasoning": agent_data.get("message", "Request received by Orchestrator."),
+                "recommended_action": "Check your notifications for the full report."
+            }), 201
+        else:
+            raise Exception(f"Agent 12 returned {resp.status_code}")
+            
+    except Exception as e:
+        print(f"Orchestration proxy error: {e}")
+        # Fallback to local analysis if agents are down
+        return analyze_symptoms()
+
 @triage_bp.route('/analyze', methods=['POST'])
 def analyze_symptoms():
     data = request.json

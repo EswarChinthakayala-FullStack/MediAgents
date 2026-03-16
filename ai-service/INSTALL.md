@@ -10,7 +10,7 @@ It is highly recommended to use a virtual environment to keep your system clean.
 
 ```bash
 # Open your terminal in the MediAgents folder
-python -m venv venv
+python3 -m venv venv
 
 # Activate the environment:
 # On Windows (HP Victus):
@@ -37,6 +37,15 @@ pip uninstall torch
 # Install the GPU-accelerated version
 pip install torch --index-url https://download.pytorch.org/whl/cu121
 ```
+
+### 🍎 For Mac Users (Apple Silicon M1/M2/M3)
+If you are using a Mac with Apple Silicon, you can leverage the GPU using **MPS**:
+
+```bash
+# Install the standard PyTorch (usually comes with MPS support)
+pip install torch torchvision torchaudio
+```
+The system will automatically detect the device as `mps`.
 
 ---
 

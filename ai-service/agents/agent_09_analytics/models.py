@@ -28,7 +28,13 @@ class AnalyticsReport(BaseModel):
     executive_briefing: str # LLM Generated
     timestamp: str = Field(default_factory=lambda: datetime.utcnow().isoformat() + "Z")
 
+class FilterCriteria(BaseModel):
+    cohort: str = "Global"
+    age_range: Optional[str] = None
+    diagnosis: Optional[str] = None
+
 class AnalyticsRequest(BaseModel):
-    cohort_name: str
-    records: List[DeIdentifiedRecord]
-    date_range: str
+    cohort_name: str = "Global"
+    records: List[DeIdentifiedRecord] = []
+    date_range: str = "Recent"
+    filters: Optional[FilterCriteria] = None
