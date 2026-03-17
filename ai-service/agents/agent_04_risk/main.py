@@ -19,8 +19,12 @@ async def handle_input_updates(data: dict):
     print(f"Agent 04 received update for patient: {data.get('patient_id')}")
     
     # Simple mapping for demo
+    patient_id = data.get("patient_id") or data.get("triage_id")
+    if not patient_id:
+        return
+        
     profile = PatientProfile(
-        patient_id=data.get("patient_id", "UNKNOWN"),
+        patient_id=patient_id,
         age=45, # Mock
         vitals=Vitals(**data.get("vitals", {"heart_rate": 80, "sys_bp": 120, "dia_bp": 80, "temp": 37.0, "spo2": 98})),
         recent_labs=[LabResult(test_name="Glucose", value=110, unit="mg/dL", status="Normal")],

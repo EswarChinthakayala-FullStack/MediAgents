@@ -21,19 +21,22 @@ async def handle_ehr_event(data: dict):
     # In a real system, we'd find and update the record.
     # For now, we'll just log it and publish ehr_updated.
     patient_id = data.get("patient_id") or data.get("triage_id")
-    if patient_id:
-        # Publish to Event Bus
-        bus.publish("ehr_updated", {
+    if not patient_id or patient_id == "UNKNOWN":
+        return
+        
+    print(f"Agent 06 updating EHR for patient: {patient_id}")
+    # Publish to Event Bus
+    bus.publish("ehr_updated", {
             "patient_id": patient_id,
             "status": "UPDATED",
             "last_event": data
         })
         
-        # 🧪 Shared Memory Pattern: Update Context
-        context = bus.get_context(patient_id) or {"patient_id": patient_id}
-        context["current_status"] = "RECORDS_SYNCED"
-        context["last_updated"] = data.get("timestamp") or "Just Now"
-        bus.set_context(patient_id, context)
+    # 🧪 Shared Memory Pattern: Update Context
+    context = bus.get_context(patient_id) or {"patient_id": patient_id}
+    context["current_status"] = "RECORDS_SYNCED"
+    context["last_updated"] = data.get("timestamp") or "Just Now"
+    bus.set_context(patient_id, context)
 
 @app.on_event("startup")
 async def startup_event():

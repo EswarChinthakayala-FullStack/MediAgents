@@ -17,4 +17,6 @@ class TriageRecord(db.Model):
     reasoning = db.Column(db.Text)
     recommended_action = db.Column(db.Text)
     icd10_hints = db.Column(db.JSON)
+    drug_alerts = db.Column(db.JSON)
+    assigned_doctor = db.Column(db.String(100))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)

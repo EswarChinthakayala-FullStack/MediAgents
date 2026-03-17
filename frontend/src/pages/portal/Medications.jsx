@@ -15,15 +15,42 @@ import {
     HeartPulse,
     Info
 } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 
 const Medications = () => {
+    const { token, user } = useAuth();
     const [view, setView] = useState('active');
+    const [data, setData] = useState(null);
+    const [loading, setLoading] = useState(true);
 
-    const medications = [
-        { id: 1, name: 'Glucosamine Sulfate', dosage: '500mg', frequency: 'Daily (Morning)', status: 'Active', instructions: 'Take with meal for joint recovery.', refillIn: '12 days' },
-        { id: 2, name: 'Ibuprofen', dosage: '200mg', frequency: 'Every 8 Hours (As needed)', status: 'Active', instructions: 'For pain relief, do not exceed 3 daily.', refillIn: 'Refill ready' },
-        { id: 3, name: 'Vitamin D3', dosage: '2000 IU', frequency: 'Daily', status: 'Active', instructions: 'Supports bone health and healing.', refillIn: '24 days' },
-    ];
+    React.useEffect(() => {
+        if (!token) return;
+        fetch('http://localhost:5000/api/patients/medications', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        })
+            .then(res => res.json())
+            .then(json => {
+                setData(json);
+                setLoading(false);
+            })
+            .catch(err => {
+                console.error("Medications fetch error:", err);
+                setLoading(false);
+            });
+    }, [token]);
+
+    if (loading) {
+        return (
+            <div className="h-[60vh] flex flex-col items-center justify-center gap-4">
+                <HeartPulse className="animate-pulse text-primary" size={40} />
+                <p className="text-[10px] font-black uppercase tracking-[0.3em] opacity-40 italic">Syncing Pharmacopeia...</p>
+            </div>
+        );
+    }
+
+    const medications = data?.medications || [];
+    const compliance = data?.adherence_metadata?.score || 94;
+    const streak = data?.adherence_metadata?.streak || 24;
 
     return (
         <div className="max-w-5xl mx-auto space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -50,15 +77,15 @@ const Medications = () => {
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-8">
                         <div className="space-y-4 max-w-md">
                             <Badge className="bg-primary text-primary-foreground font-black text-[9px] uppercase tracking-widest px-2 py-0.5 h-5">Adherence Status: Optimal</Badge>
-                            <h2 className="text-3xl font-black tracking-tight leading-none uppercase italic">Clinical Consistency: 94%</h2>
+                            <h2 className="text-3xl font-black tracking-tight leading-none uppercase italic">Clinical Consistency: {compliance}%</h2>
                             <p className="text-xs text-muted-foreground italic font-medium leading-relaxed leading-relaxed pt-2">
-                                Great job, Sarah! Your consistency in taking Glucosamine is accelerating your knee recovery process.
+                                Great job, {user?.name?.split(' ')[0]}! Your consistency {medications.length > 0 ? `with ${medications[0].name}` : ''} is accelerating your discovery process.
                                 Keep following the schedule suggested by Agent-07 Pharm-Specialist.
                             </p>
                         </div>
                         <div className="flex gap-4 md:border-l border-primary/10 md:pl-8">
                             <div className="text-center p-3">
-                                <div className="text-2xl font-black text-primary">24</div>
+                                <div className="text-2xl font-black text-primary">{streak}</div>
                                 <div className="text-[9px] font-black uppercase text-muted-foreground tracking-widest opacity-60">Days Streak</div>
                             </div>
                             <div className="text-center p-3">

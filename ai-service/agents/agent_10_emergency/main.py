@@ -37,9 +37,13 @@ async def handle_high_priority_event(data: dict):
     
     # Logic to determine if it's an emergency based on data
     if data.get("urgency_tier") == 1 or data.get("severity") == "Critical":
+        patient_id = data.get("patient_id") or data.get("triage_id")
+        if not patient_id:
+            return
+
         is_emergency = True
         event = EmergencyEvent(
-            patient_id=data.get("patient_id") or data.get("triage_id", "UNKNOWN"),
+            patient_id=patient_id,
             source=data.get("source", "System Alert"),
             severity="CRITICAL",
             details=data.get("details") or data.get("triage_summary", "High priority alert.")

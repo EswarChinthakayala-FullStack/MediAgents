@@ -69,10 +69,12 @@ const DoctorLogin = () => {
     const [showPass, setShowPass] = useState(false);
 
     const handleLogin = async (e) => {
-        e.preventDefault();
+        if (e && e.preventDefault) e.preventDefault();
+        const useKeycloak = e?.target?.useKeycloak || false;
+
         setLoading(true);
         setError('');
-        const result = await login(email, password);
+        const result = await login(email, password, useKeycloak);
         if (result.success) {
             navigate('/clinical');
         } else {
@@ -95,8 +97,8 @@ const DoctorLogin = () => {
         .au5 { animation: fadeUp 0.5s ease 0.45s both; }
         .au6 { animation: fadeUp 0.5s ease 0.55s both; }
       `}</style>
-       <div className="gw-grid-bg" />
-      <div className="gw-glow" />
+            <div className="gw-grid-bg" />
+            <div className="gw-glow" />
 
             {/* ════════════════ LEFT — Brand panel ════════════════ */}
             <div className="
@@ -283,6 +285,35 @@ const DoctorLogin = () => {
                                         </svg>
                                     </>
                                 )}
+                            </button>
+
+                            <div className="relative my-2">
+                                <div className="absolute inset-0 flex items-center">
+                                    <span className="w-full border-t border-border" />
+                                </div>
+                                <div className="relative flex justify-center text-[10px] uppercase font-bold tracking-widest">
+                                    <span className="bg-card px-2 text-muted-foreground">Or SSO</span>
+                                </div>
+                            </div>
+
+                            <button
+                                type="button"
+                                onClick={() => handleLogin({ preventDefault: () => { }, target: { useKeycloak: true } })}
+                                disabled={loading}
+                                className="
+                                    w-full h-11 rounded
+                                    flex items-center justify-center gap-2
+                                    text-sm font-semibold
+                                    bg-background text-foreground border border-border
+                                    hover:bg-accent hover:border-primary/50 transition-all duration-200
+                                    disabled:opacity-60 disabled:cursor-not-allowed
+                                    cursor-pointer
+                                "
+                            >
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
+                                    <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3y-3.5 3.5" />
+                                </svg>
+                                Sign in with Keycloak
                             </button>
                         </form>
                     </div>

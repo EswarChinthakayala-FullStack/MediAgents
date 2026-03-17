@@ -14,6 +14,7 @@ class PatientInput(BaseModel):
 
 class TriageResult(BaseModel):
     triage_id: str
+    patient_id: str
     urgency_tier: int
     urgency_label: str
     triage_summary: str

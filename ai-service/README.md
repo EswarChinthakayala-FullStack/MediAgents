@@ -65,7 +65,7 @@ cd MediAgents
 
 # Create and activate virtual environment
 python3 -m venv .venv
-source source .venv/bin/activate
+source venv/bin/activate
 # Install Core Dependencies
 pip install -r requirements.txt
 ```

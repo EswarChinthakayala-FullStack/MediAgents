@@ -57,6 +57,7 @@ class SymptomTriageAgent:
         tier = data.get("urgency_tier", 3)
         return TriageResult(
             triage_id=str(uuid.uuid4()),
+            patient_id=input_data.patient_id,
             urgency_tier=tier,
             urgency_label=TIER_LABELS.get(tier, "ROUTINE"),
             triage_summary=data.get("reasoning", "Evaluation complete."),

@@ -26,8 +26,12 @@ async def handle_notification_events(data: dict):
     #    bus.publish("notification_sent", n.model_dump())
     
     # Placeholder for demo
+    patient_id = data.get("patient_id") or data.get("triage_id")
+    if not patient_id:
+        return # Don't publish notifications without a valid patient target
+        
     bus.publish("notification_sent", {
-        "patient_id": data.get("patient_id") or data.get("triage_id", "UNKNOWN"),
+        "patient_id": patient_id,
         "status": "SENT",
         "original_event": data
     })

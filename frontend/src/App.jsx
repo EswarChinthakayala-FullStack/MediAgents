@@ -10,6 +10,7 @@ import { ThemeProvider } from './components/theme-provider';
 
 import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
+import GuestRoute from './components/GuestRoute';
 
 // Pages
 import LandingPage from './pages/LandingPage';
@@ -67,22 +68,26 @@ const router = createBrowserRouter([
     children: [
       {
         index: true,
-        element: <LandingPage />,
+        element: (
+          <GuestRoute>
+            <LandingPage />
+          </GuestRoute>
+        ),
       },
     ],
   },
 
   // Auth Routes
-  { path: '/login', element: <LoginGateway /> },
-  { path: '/login/patient', element: <PatientLogin /> },
-  { path: '/portal/login', element: <PatientLogin /> }, // Added specifically as requested
-  { path: '/login/clinical', element: <DoctorLogin /> },
-  { path: '/clinical/login', element: <DoctorLogin /> }, // SSO / OIDC Entry point
-  { path: '/login/admin', element: <AdminLogin /> },
-  { path: '/admin/login', element: <AdminLogin /> },
-  { path: '/register/patient', element: <PatientRegister /> },
-  { path: '/register/clinical', element: <StaffRegister /> },
-  { path: '/signup', element: <SignupGateway /> },
+  { path: '/login', element: <GuestRoute><LoginGateway /></GuestRoute> },
+  { path: '/login/patient', element: <GuestRoute><PatientLogin /></GuestRoute> },
+  { path: '/portal/login', element: <GuestRoute><PatientLogin /></GuestRoute> },
+  { path: '/login/clinical', element: <GuestRoute><DoctorLogin /></GuestRoute> },
+  { path: '/clinical/login', element: <GuestRoute><DoctorLogin /></GuestRoute> },
+  { path: '/login/admin', element: <GuestRoute><AdminLogin /></GuestRoute> },
+  { path: '/admin/login', element: <GuestRoute><AdminLogin /></GuestRoute> },
+  { path: '/register/patient', element: <GuestRoute><PatientRegister /></GuestRoute> },
+  { path: '/register/clinical', element: <GuestRoute><StaffRegister /></GuestRoute> },
+  { path: '/signup', element: <GuestRoute><SignupGateway /></GuestRoute> },
 
   // Patient Portal (Protected)
   {

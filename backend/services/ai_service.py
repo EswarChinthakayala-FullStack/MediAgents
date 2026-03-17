@@ -14,6 +14,7 @@ class AIService:
         self.decision_url = os.getenv("AGENT_05_URL", "http://localhost:8005")
         self.ehr_url = os.getenv("AGENT_06_URL", "http://localhost:8006")
         self.pharmacy_url = os.getenv("AGENT_07_URL", "http://localhost:8007")
+        self.assistant_url = os.getenv("AGENT_08_URL", "http://localhost:8008")
         self.analytics_url = os.getenv("AGENT_09_URL", "http://localhost:8009")
         self.alerts_url = os.getenv("AGENT_10_URL", "http://localhost:8010")
         self.audit_url = os.getenv("AGENT_11_URL", "http://localhost:8011")
@@ -21,18 +22,33 @@ class AIService:
 
     def _safe_get(self, url, params=None):
         try:
-            resp = requests.get(url, params=params, timeout=5)
+            resp = requests.get(url, params=params, timeout=30)
             return resp.json() if resp.status_code == 200 else {}
         except: return {}
 
     def _safe_post(self, url, data):
         try:
-            resp = requests.post(url, json=data, timeout=5)
+            resp = requests.post(url, json=data, timeout=30)
             return resp.json() if resp.status_code == 200 else {"error": f"Agent at {url} failed"}
         except Exception as e: return {"error": str(e)}
 
-    def analyze_symptoms(self, symptoms, severity, age=30, conditions="None", medications="None"):
-        payload = {"symptoms": symptoms, "severity": severity, "age": age, "conditions": conditions, "medications": medications}
+    def analyze_symptoms(self, patient_id, symptoms, severity, duration, age=30, sex="Male", conditions=None, medications=None):
+        # Convert conditions/medications from string if needed
+        if isinstance(conditions, str):
+            conditions = [conditions] if conditions != "None" else []
+        if isinstance(medications, str):
+            medications = [medications] if medications != "None" else []
+            
+        payload = {
+            "patient_id": str(patient_id),
+            "symptom_text": str(symptoms),
+            "severity": int(severity),
+            "duration_days": int(duration),
+            "age": int(age),
+            "sex": str(sex),
+            "conditions": conditions or [],
+            "medications": medications or []
+        }
         return self._safe_post(f"{self.triage_url}/triage", payload)
 
     def get_patient_context(self, patient_id):
@@ -48,10 +64,17 @@ class AIService:
         return self._safe_get(f"{self.scheduler_url}/slots", {"date": date, "doctor": doctor_id})
 
     def schedule_appointment(self, appointment_data):
-        return self._safe_post(f"{self.scheduler_url}/schedule", appointment_data)
+        return self._safe_post(f"{self.scheduler_url}/book", appointment_data)
+
+    def get_appointments(self, patient_id):
+        return self._safe_get(f"{self.scheduler_url}/appointments/{patient_id}")
 
     def get_full_ehr(self, patient_id):
         return self._safe_get(f"{self.ehr_url}/patient/{patient_id}/full")
+
+    def get_patient_summary(self, patient_id):
+        """Agent 06: Smart EHR Summary"""
+        return self._safe_get(f"{self.ehr_url}/summary/{patient_id}")
 
     def add_clinical_note(self, patient_id, note_data):
         return self._safe_post(f"{self.ehr_url}/patient/{patient_id}/note", note_data)
@@ -86,6 +109,10 @@ class AIService:
     def get_audit_logs(self, start=None, end=None):
         """Agent 11: Audit Sentinel"""
         return self._safe_get(f"{self.audit_url}/audit", {"from": start, "to": end})
+
+    def chat_with_assistant(self, patient_id, message):
+        """Agent 08: Health Assistant"""
+        return self._safe_post(f"{self.assistant_url}/chat", {"patient_id": patient_id, "message": message})
 
     def get_agent_health(self):
         """Orchestrator: System Health"""

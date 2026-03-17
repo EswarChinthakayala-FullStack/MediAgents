@@ -18,15 +18,60 @@ import {
     ArrowUpRight
 } from 'lucide-react';
 
-const HealthRecords = () => {
-    const [view, setView] = useState('list'); // list | timeline
+import { useAuth } from '../../context/AuthContext';
 
+const HealthRecords = () => {
+    const { token, user } = useAuth();
+    const [view, setView] = useState('list'); // list | timeline
+    const [data, setData] = useState(null);
+    const [loading, setLoading] = useState(true);
+
+    React.useEffect(() => {
+        if (!token || !user) return;
+        const pid = user.patient_id || user.id;
+        fetch(`http://localhost:5000/api/clinical/ehr/${pid}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        })
+            .then(res => res.json())
+            .then(json => {
+                setData(json);
+                setLoading(false);
+            })
+            .catch(err => {
+                console.error("EHR fetch error:", err);
+                setLoading(false);
+            });
+    }, [token, user]);
+
+    if (loading) {
+        return (
+            <div className="h-[60vh] flex flex-col items-center justify-center gap-4">
+                <FileText className="animate-pulse text-primary" size={40} />
+                <p className="text-[10px] font-black uppercase tracking-[0.3em] opacity-40 italic">Decrypting Health Vault...</p>
+            </div>
+        );
+    }
+
+    // Map clinical records to the UI format
     const records = [
-        { id: 1, title: 'Post-Op Surgical Report', date: 'Oct 10, 2026', category: 'Surgery', doctor: 'Dr. Michael Chen', type: 'PDF' },
-        { id: 2, title: 'Complete Blood Count (CBC)', date: 'Oct 05, 2026', category: 'Lab Result', doctor: 'Central Labs', type: 'Data' },
-        { id: 3, title: 'MRI Left Knee - Axial', date: 'Sep 28, 2026', category: 'Imaging', doctor: 'Radiology Dept', type: 'DICOM' },
-        { id: 4, title: 'Primary Consultation Note', date: 'Sep 15, 2026', category: 'Clinical', doctor: 'Dr. Sarah Mitchell', type: 'Note' },
-    ];
+        ...(data?.records || []).map((r, i) => ({
+            id: `hist-${i}`,
+            title: r.description || 'Clinical Visit',
+            date: r.date,
+            category: r.type || 'Encounter',
+            doctor: r.clinician || 'Hospital Staff',
+            type: 'Note'
+        })),
+        ...(data?.lab_results || []).map((l, i) => ({
+            id: `lab-${i}`,
+            title: l.test_name,
+            date: l.date,
+            category: 'Lab Result',
+            doctor: 'Clinica Diagnostics',
+            type: 'Data',
+            value: `${l.value} ${l.unit}`
+        }))
+    ].sort((a, b) => new Date(b.date) - new Date(a.date));
 
     return (
         <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">

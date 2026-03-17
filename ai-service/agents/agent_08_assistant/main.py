@@ -33,15 +33,16 @@ async def websocket_chat(websocket: WebSocket, id: str = "anonymous"):
 async def get_chat_history(id: str):
     return {"history": [{"role": "user", "content": "Hello"}, {"role": "assistant", "content": "Hi, how can I help you today?"}]}
 
+@app.post("/chat", response_model=AssistantResponse)
 @app.post("/chat/message", response_model=AssistantResponse)
 async def chat_message(input_data: UserInput):
     try:
         response = agent.chat(input_data)
-        if response.requires_escalation:
+        if response.escalation_required:
             bus.publish("chat_escalation", {
                 "patient_id": input_data.patient_id,
-                "urgency": response.urgency_level,
-                "message": response.content
+                "intent": response.intent,
+                "message": response.response_text
             })
         return response
     except Exception as e:

@@ -28,11 +28,13 @@ def get_advanced_portal_dashboard(patient_id):
     status_label = ai_context.get("status_label", "Stable")
     
     # 3. Agent 07 Medications
-    medications = ai_service.get_medications(patient_id)
+    med_report = ai_service.get_medications(patient_id)
+    med_list = med_report.get("medications", [])
+    
     # If agent returns detailed meds, use the first one as reminder
     med_reminder = {
-        "title": medications[0]["name"] if medications else "Check Medications",
-        "instruction": medications[0]["dosage"] if medications else "No active reminders.",
+        "title": med_list[0]["name"] if med_list else "Check Medications",
+        "instruction": med_list[0]["dosage"] if med_list else "No active reminders.",
         "icon": "HeartPulse"
     }
 
@@ -50,3 +52,16 @@ def get_advanced_portal_dashboard(patient_id):
         "status": status_label,
         "ai_insights": ai_context.get("insights", ["Vitals within normal limits for last 24h."])
     }), 200
+
+@portal_bp.route('/chat', methods=['POST'])
+def chat_with_assistant():
+    from flask import request
+    data = request.json
+    patient_id = data.get('patient_id')
+    message = data.get('message')
+    
+    if not message:
+        return jsonify({"error": "Message is required"}), 400
+        
+    resp = ai_service.chat_with_assistant(patient_id, message)
+    return jsonify(resp), 200

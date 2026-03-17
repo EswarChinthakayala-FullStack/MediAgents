@@ -14,11 +14,15 @@ import {
     ShieldCheck
 } from 'lucide-react';
 
+import { useAuth } from '../../context/AuthContext';
+
 const ChatAssistant = () => {
+    const { token, user } = useAuth();
     const [messages, setMessages] = useState([
-        { id: 1, role: 'assistant', text: "Hello! I'm Sarah's dedicated Health Assistant. I have access to your recent records. How can I help you today?", time: '12:45 PM' },
+        { id: 1, role: 'assistant', text: `Hello! I'm ${user?.name?.split(' ')[0]}'s dedicated Health Assistant. I have access to your recent records. How can I help you today?`, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) },
     ]);
     const [input, setInput] = useState('');
+    const [loading, setLoading] = useState(false);
     const [isRecording, setIsRecording] = useState(false);
     const messagesEndRef = useRef(null);
 
@@ -30,23 +34,49 @@ const ChatAssistant = () => {
         scrollToBottom();
     }, [messages]);
 
-    const handleSend = () => {
-        if (!input.trim()) return;
+    const handleSend = async () => {
+        if (!input.trim() || loading) return;
 
-        const newUserMessage = { id: messages.length + 1, role: 'user', text: input, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) };
-        setMessages([...messages, newUserMessage]);
+        const userText = input;
+        const newUserMessage = { id: messages.length + 1, role: 'user', text: userText, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) };
+
+        setMessages(prev => [...prev, newUserMessage]);
         setInput('');
+        setLoading(true);
 
-        // Simulate Agent 08 Response
-        setTimeout(() => {
+        try {
+            const response = await fetch('http://localhost:5000/api/portal/chat', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    patient_id: user?.patient_id || user?.id,
+                    message: userText
+                })
+            });
+
+            const data = await response.json();
+
             const assistantResponse = {
-                id: messages.length + 2,
+                id: Date.now(),
                 role: 'assistant',
-                text: "I've analyzed your question relative to your Post-Op recovery data. Based on your surgery on Oct 10th, the mild discomfort you're describing is within normal parameters. However, I've flagged this for Dr. Chen to review.",
+                text: data.response_text || data.response || "I'm currently processing your request with our clinical backend. Please stand by.",
                 time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
             };
             setMessages(prev => [...prev, assistantResponse]);
-        }, 1500);
+        } catch (err) {
+            console.error("Chat error:", err);
+            setMessages(prev => [...prev, {
+                id: Date.now(),
+                role: 'assistant',
+                text: "My apologies, I'm having trouble connecting to the medical network. Please try again in a moment.",
+                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+            }]);
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (

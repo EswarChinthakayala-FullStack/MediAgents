@@ -1,3 +1,5 @@
+import eventlet
+eventlet.monkey_patch()
 import os
 from flask import Flask, jsonify
 from flask_cors import CORS
@@ -29,6 +31,8 @@ def create_app():
     # Initialize Database
     from database import db
     db.init_app(app)
+    with app.app_context():
+        db.create_all()
 
     # Register Blueprints
     from routes.auth_routes import auth_bp

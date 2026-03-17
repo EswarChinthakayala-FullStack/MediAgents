@@ -19,7 +19,8 @@ import {
     EyeOff,
     CheckCircle2,
     Loader2,
-    Binary
+    Binary,
+    Activity
 } from 'lucide-react';
 import { Switch } from "../../components/ui/switch";
 

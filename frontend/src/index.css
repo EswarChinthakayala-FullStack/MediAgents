@@ -82,7 +82,7 @@
   --selfcare-foreground: #1e40af;
 
   /* ── Scrollbar ──────────────────────────────── */
-  --scrollbar-track: #f4f4f5;
+  --scrollbar-track: transparent;
   --scrollbar-thumb: #d4d4d8;
   --scrollbar-thumb-hover: #10B981;
   --scrollbar-size: 6px;
@@ -168,7 +168,7 @@
   --selfcare-foreground: #93c5fd;
 
   /* ── Scrollbar ──────────────────────────────── */
-  --scrollbar-track: #000000;
+  --scrollbar-track: transparent;
   --scrollbar-thumb: #27272a;
   --scrollbar-thumb-hover: #10B981;
   --scrollbar-size: 6px;
@@ -272,6 +272,35 @@
   body {
     @apply transition-colors duration-300 bg-background text-foreground;
   }
+
+  /* ── Custom Scrollbar (Global) ──────────────── */
+  ::-webkit-scrollbar {
+    width: var(--scrollbar-size);
+    height: var(--scrollbar-size);
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent !important;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: var(--muted-foreground);
+    border-radius: 10px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+    opacity: 0.5;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--primary);
+    background-clip: content-box;
+  }
+
+  /* Firefox support */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+  }
 }
 
 @layer utilities {
@@ -296,13 +325,18 @@
     height: 4px;
   }
 
+  .scroll-thin::-webkit-scrollbar-track {
+    background: transparent !important;
+  }
+
   .scroll-thin::-webkit-scrollbar-thumb {
-    background: #2e2e2e;
+    background: var(--muted-foreground);
     border-radius: 99px;
+    opacity: 0.5;
   }
 
   .scroll-thin::-webkit-scrollbar-thumb:hover {
-    background: #3e3e3e;
+    background: var(--primary);
   }
 
   /* ── Theme Backgrounds ──────────────────────── */
@@ -399,6 +433,34 @@
     opacity: 1;
     transform: translateX(0);
   }
+}
+
+@keyframes slide-left {
+  0% {
+    transform: translateX(100%);
+  }
+
+  100% {
+    transform: translateX(-100%);
+  }
+}
+
+@keyframes slide-right {
+  0% {
+    transform: translateX(-100%);
+  }
+
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.animate-slide-left {
+  animation: slide-left 2s linear infinite;
+}
+
+.animate-slide-right {
+  animation: slide-right 2s linear infinite;
 }
 
 /* Replace 'custom-scroll-container' with your specific class name */

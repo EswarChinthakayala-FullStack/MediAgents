@@ -92,14 +92,29 @@ def login():
                 'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=24)
             }, os.getenv('SECRET_KEY'), algorithm='HS256')
             
+            user_data = {
+                "id": user.id,
+                "email": user.email,
+                "role": user.role,
+                "patient_id": user.patient_id,
+                "staff_id": user.staff_id
+            }
+
+            if user.patient_id:
+                from models import Patient
+                p = Patient.query.get(user.patient_id)
+                if p:
+                    user_data["name"] = f"{p.first_name_enc.decode('utf-8', 'ignore')} {p.last_name_enc.decode('utf-8', 'ignore')}"
+            elif user.staff_id:
+                from models import Staff
+                s = Staff.query.get(user.staff_id)
+                if s:
+                    user_data["name"] = f"{s.first_name} {s.last_name}"
+
             return jsonify({
                 "token": token,
                 "provider": "keycloak",
-                "user": {
-                    "id": user.id,
-                    "email": user.email,
-                    "role": user.role
-                }
+                "user": user_data
             }), 200
     
     # Fallback to Local Auth
@@ -114,11 +129,29 @@ def login():
         'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=24)
     }, os.getenv('SECRET_KEY'), algorithm='HS256')
     
+    # Prepare user data for response
+    user_data = {
+        "id": user.id,
+        "email": user.email,
+        "role": user.role,
+        "patient_id": user.patient_id,
+        "staff_id": user.staff_id
+    }
+
+    # Try to add name
+    if user.patient_id:
+        from models import Patient
+        p = Patient.query.get(user.patient_id)
+        if p:
+            # Note: in real app, decrypt these
+            user_data["name"] = f"{p.first_name_enc.decode('utf-8', 'ignore')} {p.last_name_enc.decode('utf-8', 'ignore')}"
+    elif user.staff_id:
+        from models import Staff
+        s = Staff.query.get(user.staff_id)
+        if s:
+            user_data["name"] = f"{s.first_name} {s.last_name}"
+    
     return jsonify({
         "token": token,
-        "user": {
-            "id": user.id,
-            "email": user.email,
-            "role": user.role
-        }
+        "user": user_data
     }), 200

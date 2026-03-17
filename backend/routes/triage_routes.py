@@ -9,32 +9,90 @@ triage_bp = Blueprint('triage', __name__)
 @triage_bp.route('/', methods=['POST'])
 @triage_bp.route('/submit', methods=['POST'])
 def submit_symptoms():
+    """
+    Main entry point for Patient Portal Symptom Checker.
+    Calls Agent 01 (via AI service) to get immediate clinical triage.
+    """
     data = request.json
+    symptoms = data.get('symptoms')
+    patient_id = data.get('patient_id')
+    severity = data.get('severity', 5)
+    duration = data.get('duration', 1)
     
-    # Forward to Agent 12 (Portal) which orchestrates via Agent 00
+    if not symptoms:
+        return jsonify({"error": "Symptoms text is required"}), 400
+
     try:
-        # Agent 12 is on port 8012
-        PORTAL_AGENT_URL = "http://localhost:8012/submit_symptoms"
-        import requests
-        resp = requests.post(PORTAL_AGENT_URL, json=data, timeout=5)
+        # 1. Get Analysis from Agent 01
+        analysis_raw = ai_service.analyze_symptoms(
+            patient_id=patient_id,
+            symptoms=symptoms,
+            severity=severity,
+            duration=duration,
+            age=data.get('age', 30),
+            conditions=data.get('conditions', "None"),
+            medications=data.get('medications', "None")
+        )
+
+        if "error" in analysis_raw:
+            raise Exception(analysis_raw["error"])
         
-        if resp.status_code == 200:
-            agent_data = resp.json()
-            # The orchestrator returns OrchestrationResponse
-            # We want to return something the frontend Symptoms.jsx expects
-            return jsonify({
-                "urgency_label": agent_data.get("urgency_label", "Moderate"),
-                "urgency_tier": agent_data.get("urgency_tier", 3),
-                "reasoning": agent_data.get("message", "Request received by Orchestrator."),
-                "recommended_action": "Check your notifications for the full report."
-            }), 201
-        else:
-            raise Exception(f"Agent 12 returned {resp.status_code}")
+        # Determine if response is wrapped in 'data' (FastAPI is flat, some local agents wrap)
+        analysis = analysis_raw.get("data", analysis_raw) if isinstance(analysis_raw, dict) else {}
+        
+        # 2. Save to database for history
+        # Map label to database enum
+        label = analysis.get('urgency_label', 'Self-care').title().replace("-", "") # Title case for enum
+        valid_tiers = ['Emergency', 'Urgent', 'Routine', 'Self-care']
+        db_tier = label if label in valid_tiers else 'Routine'
+        if 'Self-care' in label or 'Self' in label: db_tier = 'Self-care'
+
+        try:
+            new_record = TriageRecord(
+                id=analysis.get('triage_id', str(uuid.uuid4())),
+                patient_id=patient_id,
+                session_id=str(uuid.uuid4()),
+                symptom_text=symptoms,
+                duration=str(duration),
+                severity_score=int(severity),
+                urgency_tier=db_tier,
+                reasoning=analysis.get('triage_summary', 'Analysis complete.'),
+                recommended_action=analysis.get('recommended_action', 'Please monitor your symptoms.'),
+                icd10_hints=analysis.get('icd10_hints', []),
+                drug_alerts=analysis.get('drug_alerts', [])
+            )
             
+            db.session.add(new_record)
+            db.session.commit()
+            print(f"✅ Triage record saved for patient {patient_id}")
+        except Exception as db_err:
+            db.session.rollback()
+            print(f"❌ Database error saving triage: {db_err}")
+            # We continue anyway to return the analysis to the user even if DB save fails
+
+        # 3. Trigger Orchestrator in background (optional, for demo we just return)
+        # requests.post("http://localhost:8012/submit_symptoms", json=data) 
+        
+        return jsonify({
+            "status": "success",
+            "urgency_label": analysis.get('urgency_label', 'Routine'),
+            "urgency_tier": analysis.get('urgency_tier', 3),
+            "reasoning": analysis.get('triage_summary', 'Clinical analysis finished.'),
+            "recommended_action": analysis.get('recommended_action', 'Monitor and schedule follow-up if symptoms persist.')
+        }), 201
+        
     except Exception as e:
-        print(f"Orchestration proxy error: {e}")
-        # Fallback to local analysis if agents are down
-        return analyze_symptoms()
+        import traceback
+        traceback.print_exc()
+        print(f"Triage error: {e}")
+        return jsonify({
+            "status": "error",
+            "message": str(e),
+            "urgency_label": "Unknown",
+            "urgency_tier": 5,
+            "reasoning": "Agent service is currently synchronizing.",
+            "recommended_action": "Please contact the clinic directly at (555) 012-3456."
+        }), 500
 
 @triage_bp.route('/analyze', methods=['POST'])
 def analyze_symptoms():
@@ -47,30 +105,39 @@ def analyze_symptoms():
         return jsonify({"error": "Symptoms text is required"}), 400
 
     try:
-        analysis = ai_service.analyze_symptoms(
+        analysis_raw = ai_service.analyze_symptoms(
+            patient_id=patient_id,
             symptoms=symptoms,
             severity=severity,
+            duration=data.get('duration', 1),
             age=data.get('age', 30),
             conditions=data.get('conditions', "None"),
             medications=data.get('medications', "None")
         )
         
+        if "error" in analysis_raw:
+            raise Exception(analysis_raw["error"])
+
+        analysis = analysis_raw.get("data", analysis_raw) if isinstance(analysis_raw, dict) else {}
+        
         # Map label to database enum if necessary
-        label = analysis['urgency_label'].capitalize()
+        label = analysis.get('urgency_label', 'Routine').capitalize()
         if label == 'Self-care': label = 'Self-care'
         elif label == 'Emergency': label = 'Emergency'
         elif label == 'Urgent': label = 'Urgent'
         else: label = 'Routine'
 
         new_record = TriageRecord(
-            id=str(uuid.uuid4()),
+            id=analysis.get('triage_id', str(uuid.uuid4())),
             patient_id=patient_id,
             session_id=str(uuid.uuid4()),
             symptom_text=symptoms,
             severity_score=severity,
             urgency_tier=label,
-            reasoning=analysis['reasoning'],
-            recommended_action="Please follow up with a professional if symptoms persist."
+            reasoning=analysis.get('triage_summary', 'Evaluation complete.'),
+            recommended_action=analysis.get('recommended_action', "Please follow up with a professional if symptoms persist."),
+            icd10_hints=analysis.get('icd10_hints', []),
+            drug_alerts=analysis.get('drug_alerts', [])
         )
         
         db.session.add(new_record)
@@ -78,9 +145,9 @@ def analyze_symptoms():
         
         return jsonify({
             "id": new_record.id,
-            "urgency": analysis['urgency_label'],
-            "tier": analysis['urgency_tier'],
-            "reasoning": analysis['reasoning'],
+            "urgency": analysis.get('urgency_label', 'Routine'),
+            "tier": analysis.get('urgency_tier', 3),
+            "reasoning": analysis.get('triage_summary', 'Evaluation complete.'),
             "status": "success"
         }), 201
         

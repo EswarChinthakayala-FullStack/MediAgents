@@ -30,8 +30,9 @@ async def perform_triage(data: PatientInput):
         bus.publish("triage_result", result.model_dump())
         
         # 🧪 Shared Memory Pattern: Initialize Patient Context
-        bus.set_context(result.triage_id, {
-            "patient_id": result.triage_id,
+        bus.set_context(result.patient_id, {
+            "patient_id": result.patient_id,
+            "triage_id": result.triage_id,
             "current_status": "TRIAGED",
             "urgency_tier": result.urgency_tier,
             "last_symptoms": data.symptom_text,

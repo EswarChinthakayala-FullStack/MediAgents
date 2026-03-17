@@ -15,16 +15,43 @@ import {
     ExternalLink
 } from 'lucide-react';
 
-const Appointments = () => {
-    const upcoming = [
-        { id: 1, doctor: 'Dr. Michael Chen', specialty: 'Orthopedics', date: 'Oct 24, 2026', time: '10:30 AM', type: 'Clinical Visit', status: 'Confirmed', location: 'Ward A, Room 12' },
-        { id: 2, doctor: 'Dr. Sarah Mitchell', specialty: 'General Practice', date: 'Oct 28, 2026', time: '02:00 PM', type: 'Video Consult', status: 'Confirmed', location: 'Telehealth Link' },
-    ];
+import { useAuth } from '../../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
-    const past = [
-        { id: 3, doctor: 'Dr. James Wilson', specialty: 'Cardiology', date: 'Sep 15, 2026', time: '09:00 AM', status: 'Completed' },
-        { id: 4, doctor: 'Clinician Elena', specialty: 'Physiotherapy', date: 'Aug 22, 2026', time: '11:30 AM', status: 'Completed' },
-    ];
+const Appointments = () => {
+    const { token } = useAuth();
+    const navigate = useNavigate();
+    const [data, setData] = React.useState([]);
+    const [loading, setLoading] = React.useState(true);
+
+    React.useEffect(() => {
+        if (!token) return;
+        fetch('http://localhost:5000/api/patients/appointments', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        })
+            .then(res => res.json())
+            .then(json => {
+                setData(json);
+                setLoading(false);
+            })
+            .catch(err => {
+                console.error("Appointments fetch error:", err);
+                setLoading(false);
+            });
+    }, [token]);
+
+    if (loading) {
+        return (
+            <div className="h-[60vh] flex flex-col items-center justify-center gap-4">
+                <CalendarClock className="animate-bounce text-primary" size={40} />
+                <p className="text-[10px] font-black uppercase tracking-[0.3em] opacity-40 italic">Retrieving Schedule...</p>
+            </div>
+        );
+    }
+
+    const appointmentsArray = Array.isArray(data) ? data : [];
+    const upcoming = appointmentsArray.filter(a => a.status !== 'completed' && a.status !== 'cancelled');
+    const past = appointmentsArray.filter(a => a.status === 'completed');
 
     return (
         <div className="max-w-5xl mx-auto space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -38,7 +65,7 @@ const Appointments = () => {
                         <p className="text-muted-foreground text-sm italic">Track and manage your scheduled clinical sessions.</p>
                     </div>
                 </div>
-                <Button className="h-11 rounded-xl font-black uppercase tracking-widest text-[10px] px-6 shadow-xl shadow-primary/10">
+                <Button className="h-11 rounded-xl font-black uppercase tracking-widest text-[10px] px-6 shadow-xl shadow-primary/10" onClick={() => navigate('/portal/book')}>
                     Book New Session
                 </Button>
             </div>
@@ -56,15 +83,15 @@ const Appointments = () => {
                                     <div className="flex justify-between items-start">
                                         <div className="flex gap-3">
                                             <div className="h-12 w-12 rounded-xl bg-secondary/50 flex flex-col items-center justify-center text-primary font-bold">
-                                                <span className="text-[10px] leading-none uppercase tracking-tighter">OCT</span>
-                                                <span className="text-lg leading-none mt-1">24</span>
+                                                <span className="text-[10px] leading-none uppercase tracking-tighter">{apt.date?.split('-')[1] || 'SCH'}</span>
+                                                <span className="text-lg leading-none mt-1">{apt.date?.split('-')[2] || '??'}</span>
                                             </div>
                                             <div>
                                                 <h4 className="font-bold text-base tracking-tight">{apt.doctor}</h4>
                                                 <p className="text-[11px] font-medium text-muted-foreground opacity-70 italic">{apt.specialty}</p>
                                             </div>
                                         </div>
-                                        <Badge className="bg-emerald-500/10 text-emerald-500 border-none rounded-lg px-2 h-6 text-[9px] font-black uppercase tracking-widest">{apt.status}</Badge>
+                                        <Badge className={`border-none rounded-lg px-2 h-6 text-[9px] font-black uppercase tracking-widest ${apt.status === 'scheduled' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-primary/10 text-primary'}`}>{apt.status}</Badge>
                                     </div>
 
                                     <div className="grid grid-cols-2 gap-4 pt-2">

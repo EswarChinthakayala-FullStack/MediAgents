@@ -102,7 +102,7 @@ const ClinicalDashboard = () => {
                         </div>
                     </CardHeader>
                     <CardContent className="p-0">
-                        <div className="overflow-x-auto">
+                        <div className="overflow-x-auto scroll-thin">
                             <table className="w-full text-left border-collapse">
                                 <thead>
                                     <tr className="border-b border-border/5 bg-secondary/5">

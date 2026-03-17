@@ -8,6 +8,16 @@ clinical_bp = Blueprint('clinical', __name__)
 
 from services.ai_service import ai_service
 
+@clinical_bp.route('/doctors', methods=['GET'])
+def get_doctors():
+    doctors = Staff.query.filter_by(role='doctor').all()
+    return jsonify([{
+        "id": d.id,
+        "name": f"Dr. {d.first_name} {d.last_name}",
+        "specialty": d.speciality or "General Practice",
+        "is_on_duty": d.is_on_duty
+    } for d in doctors]), 200
+
 @clinical_bp.route('/ehr/<patient_id>', methods=['GET'])
 def get_patient_ehr(patient_id):
     """Agent 06: GET /patient/{id}/full"""

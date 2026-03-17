@@ -16,7 +16,8 @@ import {
     MoreVertical,
     Coffee,
     Stethoscope,
-    DoorOpen
+    DoorOpen,
+    CheckCircle2
 } from 'lucide-react';
 
 const Scheduling = () => {
