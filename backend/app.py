@@ -62,7 +62,7 @@ def create_app():
         }), 200
 
     # Start Redis Listener
-    start_redis_listener(socketio, 
+    start_redis_listener(socketio, app,
                          redis_host=os.getenv('REDIS_HOST', 'localhost'),
                          redis_port=os.getenv('REDIS_PORT', 6379))
 

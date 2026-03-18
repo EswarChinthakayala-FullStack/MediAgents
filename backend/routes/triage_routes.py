@@ -1,8 +1,9 @@
 from flask import Blueprint, request, jsonify
 from database import db
-from models import TriageRecord
+from models import TriageRecord, Staff
 from services.ai_service import ai_service
 import uuid
+from datetime import datetime
 
 triage_bp = Blueprint('triage', __name__)
 
@@ -48,6 +49,16 @@ def submit_symptoms():
         if 'Self-care' in label or 'Self' in label: db_tier = 'Self-care'
 
         try:
+            # Assign a doctor if available
+            on_duty_doctor = Staff.query.filter_by(role='doctor', is_on_duty=True).first()
+            doctor_name = f"Dr. {on_duty_doctor.first_name} {on_duty_doctor.last_name}" if on_duty_doctor else "Queue - Pending Review"
+
+            full_reasoning = analysis.get('reasoning', [])
+            if isinstance(full_reasoning, list):
+                reasoning_str = "\n".join(full_reasoning)
+            else:
+                reasoning_str = analysis.get('triage_summary', 'Analysis incomplete.')
+
             new_record = TriageRecord(
                 id=analysis.get('triage_id', str(uuid.uuid4())),
                 patient_id=patient_id,
@@ -56,10 +67,12 @@ def submit_symptoms():
                 duration=str(duration),
                 severity_score=int(severity),
                 urgency_tier=db_tier,
-                reasoning=analysis.get('triage_summary', 'Analysis complete.'),
+                reasoning=reasoning_str,
                 recommended_action=analysis.get('recommended_action', 'Please monitor your symptoms.'),
                 icd10_hints=analysis.get('icd10_hints', []),
-                drug_alerts=analysis.get('drug_alerts', [])
+                drug_alerts=analysis.get('drug_alerts', []),
+                assigned_doctor=doctor_name,
+                created_at=datetime.utcnow()
             )
             
             db.session.add(new_record)
@@ -77,8 +90,12 @@ def submit_symptoms():
             "status": "success",
             "urgency_label": analysis.get('urgency_label', 'Routine'),
             "urgency_tier": analysis.get('urgency_tier', 3),
-            "reasoning": analysis.get('triage_summary', 'Clinical analysis finished.'),
-            "recommended_action": analysis.get('recommended_action', 'Monitor and schedule follow-up if symptoms persist.')
+            "reasoning": analysis.get('reasoning', [analysis.get('triage_summary', 'Clinical analysis finished.')]),
+            "recommended_action": analysis.get('recommended_action', 'Monitor and schedule follow-up if symptoms persist.'),
+            "icd10_hints": analysis.get('icd10_hints', []),
+            "drug_alerts": analysis.get('drug_alerts', []),
+            "triage_id": analysis.get('triage_id'),
+            "requires_alert": analysis.get('requires_alert', False)
         }), 201
         
     except Exception as e:
@@ -127,6 +144,16 @@ def analyze_symptoms():
         elif label == 'Urgent': label = 'Urgent'
         else: label = 'Routine'
 
+        # Assign a doctor if available
+        on_duty_doctor = Staff.query.filter_by(role='doctor', is_on_duty=True).first()
+        doctor_name = f"Dr. {on_duty_doctor.first_name} {on_duty_doctor.last_name}" if on_duty_doctor else "Queue - Pending Review"
+
+        full_reasoning = analysis.get('reasoning', [])
+        if isinstance(full_reasoning, list):
+            reasoning_str = "\n".join(full_reasoning)
+        else:
+            reasoning_str = analysis.get('triage_summary', 'Evaluation complete.')
+
         new_record = TriageRecord(
             id=analysis.get('triage_id', str(uuid.uuid4())),
             patient_id=patient_id,
@@ -134,10 +161,12 @@ def analyze_symptoms():
             symptom_text=symptoms,
             severity_score=severity,
             urgency_tier=label,
-            reasoning=analysis.get('triage_summary', 'Evaluation complete.'),
+            reasoning=reasoning_str,
             recommended_action=analysis.get('recommended_action', "Please follow up with a professional if symptoms persist."),
             icd10_hints=analysis.get('icd10_hints', []),
-            drug_alerts=analysis.get('drug_alerts', [])
+            drug_alerts=analysis.get('drug_alerts', []),
+            assigned_doctor=doctor_name,
+            created_at=datetime.utcnow()
         )
         
         db.session.add(new_record)

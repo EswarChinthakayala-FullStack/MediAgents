@@ -54,7 +54,9 @@ const Appointments = () => {
     const past = appointmentsArray.filter(a => a.status === 'completed');
 
     return (
-        <div className="max-w-5xl mx-auto space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
+        <div className="max-w-6xl mx-auto space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
+             <div className="gw-grid-bg" />
+      <div className="gw-glow" />
             <div className="flex items-center justify-between gap-6 pb-2 border-b border-border/10">
                 <div className="flex items-center gap-4">
                     <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary group hover:scale-110 transition-transform">

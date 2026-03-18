@@ -7,18 +7,18 @@ load_dotenv()
 class AIService:
     def __init__(self):
         # Base URLs for specialized agents
-        self.triage_url = os.getenv("AGENT_01_URL", "http://localhost:8001")
-        self.scheduler_url = os.getenv("AGENT_02_URL", "http://localhost:8002")
-        self.vitals_url = os.getenv("AGENT_03_URL", "http://localhost:8003")
-        self.risk_url = os.getenv("AGENT_04_URL", "http://localhost:8004")
-        self.decision_url = os.getenv("AGENT_05_URL", "http://localhost:8005")
-        self.ehr_url = os.getenv("AGENT_06_URL", "http://localhost:8006")
-        self.pharmacy_url = os.getenv("AGENT_07_URL", "http://localhost:8007")
-        self.assistant_url = os.getenv("AGENT_08_URL", "http://localhost:8008")
-        self.analytics_url = os.getenv("AGENT_09_URL", "http://localhost:8009")
-        self.alerts_url = os.getenv("AGENT_10_URL", "http://localhost:8010")
-        self.audit_url = os.getenv("AGENT_11_URL", "http://localhost:8011")
-        self.orchestrator_url = os.getenv("ORCHESTRATOR_URL", "http://localhost:8000")
+        self.triage_url = os.getenv("AGENT_01_URL", "http://127.0.0.1:8001")
+        self.scheduler_url = os.getenv("AGENT_02_URL", "http://127.0.0.1:8002")
+        self.vitals_url = os.getenv("AGENT_03_URL", "http://127.0.0.1:8003")
+        self.risk_url = os.getenv("AGENT_04_URL", "http://127.0.0.1:8004")
+        self.decision_url = os.getenv("AGENT_05_URL", "http://127.0.0.1:8005")
+        self.ehr_url = os.getenv("AGENT_06_URL", "http://127.0.0.1:8006")
+        self.pharmacy_url = os.getenv("AGENT_07_URL", "http://127.0.0.1:8007")
+        self.assistant_url = os.getenv("AGENT_08_URL", "http://127.0.0.1:8008")
+        self.analytics_url = os.getenv("AGENT_09_URL", "http://127.0.0.1:8009")
+        self.alerts_url = os.getenv("AGENT_10_URL", "http://127.0.0.1:8010")
+        self.audit_url = os.getenv("AGENT_11_URL", "http://127.0.0.1:8011")
+        self.orchestrator_url = os.getenv("ORCHESTRATOR_URL", "http://127.0.0.1:8000")
 
     def _safe_get(self, url, params=None):
         try:

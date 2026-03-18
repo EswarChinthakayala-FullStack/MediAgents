@@ -128,7 +128,9 @@ const BookAppointment = () => {
 
 
     return (
-        <div className="max-w-5xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+        <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      <div className="gw-grid-bg" />
+      <div className="gw-glow" />
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-2">
                 <div className="flex items-center gap-4">
                     <div className="h-14 w-14 rounded-2xl bg-primary flex items-center justify-center text-primary-foreground shadow-2xl shadow-primary/20">

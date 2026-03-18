@@ -31,7 +31,7 @@ echo $! > "logs/agent_13_llm.pid"
 # Give the LLM service some time to initialize weights (avoid early connection failures)
 sleep 15
 export IS_LLM_SERVER="false"
-export CLINICAI_LLM_URL="http://localhost:8013"
+export CLINICAI_LLM_URL="http://127.0.0.1:8013"
 
 # 2. START THE REST OF THE AGENTS
 AGENTS=(
